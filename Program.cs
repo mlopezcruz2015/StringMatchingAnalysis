@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace StringMatchingAnalysis
@@ -7,12 +8,13 @@ namespace StringMatchingAnalysis
 
     class Program
     {
-
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            if (File.Exists("Brute.txt"))
+                File.Delete("Brute.txt");
 
-            //first start with randoms
+            if (File.Exists("Boyer.txt"))
+                File.Delete("Boyer.txt");
 
             for (int i = 0; i < 5; i++)
             {
@@ -50,22 +52,34 @@ namespace StringMatchingAnalysis
                 randomPattern = RandomString(m);
                 containedPattern = GenerateContainedPattern(text, m);
 
-                Console.WriteLine($"n = {n}, m = {m}, with Random String");
+                File.AppendAllText("Brute.txt", $"n = {n}, m = {m}, with Random String" + Environment.NewLine);
                 BruteMatching(text, randomPattern);
 
-                Console.WriteLine($"n = {n}, m = {m}, with Generated Matching String");
+                File.AppendAllText("Brute.txt", $"n = {n}, m = {m}, with Generated Matching String" + Environment.NewLine);
                 BruteMatching(text, containedPattern);
+
+                File.AppendAllText("Boyer.txt", $"n = {n}, m = {m}, with Random String" + Environment.NewLine);
+                BoyerMoore(text, randomPattern);
+
+                File.AppendAllText("Boyer.txt", $"n = {n}, m = {m}, with Generated Matching String" + Environment.NewLine);
+                BoyerMoore(text, containedPattern);
 
                 //Run Second two tests with m = n / 2
                 m = n / 2;
                 randomPattern = RandomString(m);
                 containedPattern = GenerateContainedPattern(text, m);
 
-                Console.WriteLine($"n = {n}, m = {m}, with Random String");
+                File.AppendAllText("Brute.txt", $"n = {n}, m = {m}, with Random String" + Environment.NewLine);
                 BruteMatching(text, randomPattern);
 
-                Console.WriteLine($"n = {n}, m = {m}, with Generated Matching String");
+                File.AppendAllText("Brute.txt", $"n = {n}, m = {m}, with Generated Matching String" + Environment.NewLine);
                 BruteMatching(text, containedPattern);
+
+                File.AppendAllText("Boyer.txt", $"n = {n}, m = {m}, with Random String" + Environment.NewLine);
+                BoyerMoore(text, randomPattern);
+
+                File.AppendAllText("Boyer.txt", $"n = {n}, m = {m}, with Generated Matching String" + Environment.NewLine);
+                BoyerMoore(text, containedPattern);
             }
         }
 
@@ -97,6 +111,7 @@ namespace StringMatchingAnalysis
                     if (j == m)
                     {
                         indexFound = i;
+                        Console.WriteLine($"Match string found at index: {indexFound}");
                         break;
                     }
                 }
@@ -115,17 +130,73 @@ namespace StringMatchingAnalysis
             average = totalSum / 1000;
             average = Math.Round((double)average, 3);
 
-            if (indexFound != -1)
-            {
-                Console.WriteLine($"Match found, index {indexFound}.");
-                Console.WriteLine($"Average Time elapsed: {average}msec\n");
-            }
-            else
-            {
+            if (indexFound != -1)            
+                File.AppendAllText("Brute.txt", $"Match found." + Environment.NewLine);            
+            else            
+                File.AppendAllText("Brute.txt", $"Match not found." + Environment.NewLine);            
 
-                Console.WriteLine($"Match Not found.");
-                Console.WriteLine($"Average Time elapsed: {average}msec\n");
+            File.AppendAllText("Brute.txt", $"Average Time elapsed: {average}msec" + Environment.NewLine + Environment.NewLine);
+        }
+
+        private static void BoyerMoore(string T, string P)
+        {
+            //Run 10 times and get average
+            double average = 0;
+            double totalSum = 0;
+            int indexFound = -1;
+
+            for (int x = 0; x < 1000; x++)
+            {
+                int n = T.Length;
+                int m = P.Length;
+
+                int[] shiftIndex = new int[n];
+                shift(P.ToCharArray(), m, shiftIndex);
+
+                //Start Timer
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                for (int i = 0; i <= n - m;)
+                {
+                    int pos = m - 1;
+
+                    while (pos >= 0 && P.Substring(pos, 1) == T.Substring(i + pos, 1))
+                        pos--;
+
+                    if (pos < 0)
+                    {
+                        indexFound = i;
+
+                        Console.WriteLine($"Match string found at index: {indexFound}");
+
+                        i += (i + m < n) ? m - shiftIndex[T[i + m]] : 1;
+
+                        break;
+                    }
+                    else
+                    {
+                        i += Max(1, pos - shiftIndex[T[i + pos]]);
+                    }
+                }
+
+                //End Timer, get time.
+                stopwatch.Stop();
+                TimeSpan timeTaken = stopwatch.Elapsed;
+                var elapsed_time = (double)timeTaken.TotalMilliseconds;
+                totalSum += elapsed_time;
             }
+
+
+            average = totalSum / 1000;
+            average = Math.Round((double)average, 3);
+
+            if (indexFound != -1)
+                File.AppendAllText("Boyer.txt", $"Match found." + Environment.NewLine);
+            else
+                File.AppendAllText("Boyer.txt", $"Match not found." + Environment.NewLine);
+
+            File.AppendAllText("Boyer.txt", $"Average Time elapsed: {average}msec" + Environment.NewLine + Environment.NewLine);
         }
 
         private static Random random = new Random();
@@ -137,6 +208,11 @@ namespace StringMatchingAnalysis
               .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
+        public static int Max(int a, int b)
+        {
+            return a > b ? a : b;
+        }
+
         public static string GenerateContainedPattern(string text, int m)
         {
             int maxIndex = text.Length - m;
@@ -146,6 +222,21 @@ namespace StringMatchingAnalysis
             string containedPattern = text.Substring(chosenIndex, m);
 
             return containedPattern;
+        }
+
+        //used for booyer moore
+        static void shift(char []str, int m, int []tempShift)
+        {
+            int i;
+
+            // Initialize all occurrences as -1
+            for (i = 0; i < str.Length; i++)
+                tempShift[i] = -1;
+
+            // Fill the actual value of last occurrence 
+            // of a character
+            for (i = 0; i < m; i++)
+                tempShift[(int)str[i]] = i;
         }
     }
 }
