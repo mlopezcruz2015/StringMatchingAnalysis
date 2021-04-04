@@ -12,7 +12,6 @@ namespace StringMatchingAnalysis
         {
             Console.WriteLine("Hello World!");
 
-
             //first start with randoms
 
             for (int i = 0; i < 5; i++)
@@ -47,47 +46,50 @@ namespace StringMatchingAnalysis
                 string randomPattern = "";
                 string containedPattern = "";
 
-                Console.WriteLine($"n = {n}, m = {m}_____________________________________");
-
-                //Generate Random Pattern to be found.
+                //Run first two tests with m = 1000
                 randomPattern = RandomString(m);
                 containedPattern = GenerateContainedPattern(text, m);
 
+                Console.WriteLine($"n = {n}, m = {m}, with Random String");
                 BruteMatching(text, randomPattern);
+
+                Console.WriteLine($"n = {n}, m = {m}, with Generated Matching String");
                 BruteMatching(text, containedPattern);
 
-                //Generate Contained Pattern
+                //Run Second two tests with m = n / 2
                 m = n / 2;
-                Console.WriteLine($"n = {n}, m = {m}_____________________________________");
                 randomPattern = RandomString(m);
                 containedPattern = GenerateContainedPattern(text, m);
 
+                Console.WriteLine($"n = {n}, m = {m}, with Random String");
                 BruteMatching(text, randomPattern);
+
+                Console.WriteLine($"n = {n}, m = {m}, with Generated Matching String");
                 BruteMatching(text, containedPattern);
             }
         }
 
-        private static void BruteMatching(string text, string pattern)
+        private static void BruteMatching(string T, string P)
         {
             //Run 10 times and get average
             double average = 0;
             double totalSum = 0;
             int indexFound = -1;
 
-            for (int x = 0; x < 100; x++)
+            for (int x = 0; x < 1000; x++)
             {
                 //Start Timer
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
-                int n = text.Length;
-                int m = pattern.Length;
+                int n = T.Length;
+                int m = P.Length;
 
                 for (int i = 0; i < n - m; i++)
                 {
                     int j = 0;
 
-                    while (j < m && text[i + j] == pattern[j])
+                    while (j < m && T[i + j] == P[j])
                     {
                         j++;
                     }
@@ -102,15 +104,15 @@ namespace StringMatchingAnalysis
                 //End Timer, get time.
                 stopwatch.Stop();
                 TimeSpan timeTaken = stopwatch.Elapsed;
-                var elapsed_time = Math.Round((double)timeTaken.TotalMilliseconds, 3);
+                var elapsed_time = (double)timeTaken.TotalMilliseconds;
                 totalSum += elapsed_time;
 
 
-                Console.WriteLine($"Run {x}, RT = {elapsed_time}");
+                //Console.WriteLine($"Run {x}, RT = {elapsed_time}");
             }
 
 
-            average = totalSum / 100;
+            average = totalSum / 1000;
             average = Math.Round((double)average, 3);
 
             if (indexFound != -1)
